@@ -1,14 +1,20 @@
 import tensorflow as tf
+import pandas_datareader as pr
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.regularizers import l2
+from tensorflow.keras.layers import LSTM
+from tensorflow.keras.layers import SimpleRNN
 from tensorflow.keras.layers import Dropout
+import matplotlib.pyplot as plt
+import math
 import pandas as pd 
 import keras_tuner as kt
 import numpy as np 
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 print("Keras imports are working!")
 
 
@@ -18,18 +24,18 @@ x_train = pd.read_csv('X_train.csv')
 x_test = pd.read_csv('X_test.csv')
 y_test = pd.read_csv('y_test.csv')
 y_train = pd.read_csv('y_train.csv')
+step = 365
 
-
-x_train.drop(labels=["day","month","hour"] , axis = 1)
-x_test.drop(labels=["day","month","hour"] , axis = 1)
-
-def build_model(hp):
-        model = Sequential()
-        model.add(Dense(units=hp.Int('units', min_value=32, max_value=128, step=32), activation='relu'))
-        model.add(Dense(1, activation='linear'))
-        model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
-        return model  
-
+def build_model(self):
+        self.model = Sequential()
+        self.model.add(LSTM(128, return_sequences=True, input_shape= (step,1)))
+        self.model.add(LSTM(64, return_sequences=False))
+        self.model.add(Dense(25))
+        self.model.add(Dense(1))
+        self.model.compile(
+            optimizer='adam' , loss = 'mean_squared_error',
+            metrics=['mae'])
+        self.model.summary()
 
 class NeuralNetwork:
 
@@ -39,8 +45,6 @@ class NeuralNetwork:
         self.X_test = x_test
         self.y_train = y_train
         self.y_test = y_test
-        
-        
 
         self.scaler = StandardScaler()
         self.X_train = self.scaler.fit_transform(self.X_train)
@@ -48,21 +52,29 @@ class NeuralNetwork:
 
         self.model = Sequential()
 
-    def b_model(self, hp=None):
+    def build_model(self):
         self.model = Sequential()
-        units = hp.Int('units', min_value=32, max_value=128, step=32) if hp else 64  # Default to 64 units if hp is None
-        self.model.add(Dense(units=units, activation='relu'))
-        self.model.add(Dense(1, activation='linear'))
-        self.model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
+        self.model.add(LSTM(128, return_sequences=True, input_shape= (step,1)))
+        self.model.add(LSTM(64, return_sequences=False))
+        self.model.add(Dense(25))
+        self.model.add(Dense(1))
+        self.model.compile(
+            optimizer='adam' , loss = 'mean_squared_error',
+            metrics=['mae'])
+        self.model.summary()
   
 
     def train(self, epochs = 50 , batch_size = 32):
         self.model.fit(self.X_train , self.y_train, validation_data = (self.X_test , self.y_test) , epochs = epochs , batch_size = batch_size)
 
     def evaluate(self): 
-
-        loss , mae = self.model.evaluate(self.X_test , self.y_test)
-        print(f"MAE : {mae}")
+        result = self.model.evaluate(self.X_test , self.y_test)
+        if len(result) == 2:
+            loss,mae = result
+            print(f"Loss : {loss} , MAE : {mae}")
+        else:
+            loss = result
+            print(f"Loss: {loss}")
 
 
 
@@ -82,7 +94,7 @@ def main():
    
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     nn = NeuralNetwork(x_train, x_test, y_train, y_test)
-    nn.b_model(hp=best_hps)  
+    nn.build_model()  
     nn.train()
     nn.evaluate()
 
