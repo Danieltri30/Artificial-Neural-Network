@@ -2,10 +2,13 @@ import tensorflow as tf
 import pandas_datareader as pr
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.layers import SimpleRNN
 from tensorflow.keras.layers import Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.layers import GRU
 import matplotlib.pyplot as plt
 import math
 import pandas as pd 
@@ -24,12 +27,14 @@ x_train = pd.read_csv('X_train.csv')
 x_test = pd.read_csv('X_test.csv')
 y_test = pd.read_csv('y_test.csv')
 y_train = pd.read_csv('y_train.csv')
-step = 365
+step = 600
 
 def build_model(self):
         self.model = Sequential()
-        self.model.add(LSTM(128, return_sequences=True, input_shape= (step,1)))
-        self.model.add(LSTM(64, return_sequences=False))
+        self.model.add(GRU(32, return_sequences=True, input_shape=(step, 1)))
+        self.model.add(Dropout(0.2))
+        self.model.add(GRU(16, return_sequences=False))
+        self.model.add(Dropout(0.2))
         self.model.add(Dense(25))
         self.model.add(Dense(1))
         self.model.compile(
@@ -54,8 +59,10 @@ class NeuralNetwork:
 
     def build_model(self):
         self.model = Sequential()
-        self.model.add(LSTM(128, return_sequences=True, input_shape= (step,1)))
-        self.model.add(LSTM(64, return_sequences=False))
+        self.model.add(GRU(32, return_sequences=True, input_shape=(step, 1)))
+        self.model.add(Dropout(0.2))
+        self.model.add(GRU(16, return_sequences=False))
+        self.model.add(Dropout(0.2))
         self.model.add(Dense(25))
         self.model.add(Dense(1))
         self.model.compile(
@@ -64,8 +71,16 @@ class NeuralNetwork:
         self.model.summary()
   
 
-    def train(self, epochs = 50 , batch_size = 32):
-        self.model.fit(self.X_train , self.y_train, validation_data = (self.X_test , self.y_test) , epochs = epochs , batch_size = batch_size)
+    def train(self, epochs = 30 , batch_size = 32):
+        early_stop = EarlyStopping(monitor = 'val_loss' , patience = 5, restore_best_weights = True)
+        self.model.fit(
+            self.X_train , 
+            self.y_train, 
+            validation_data = (self.X_test , self.y_test) , 
+            epochs = epochs , 
+            batch_size = batch_size,
+            callbacks = [early_stop]
+            )
 
     def evaluate(self): 
         result = self.model.evaluate(self.X_test , self.y_test)
@@ -103,4 +118,5 @@ def main():
 if __name__ == "__main__":
     main()
                 
+
 
