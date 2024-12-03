@@ -11,9 +11,9 @@ import cartopy.feature as cfeature
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.metrics import mean_absolute_error, r2_score
-from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM, SimpleRNN
+from tensorflow.keras.layers import Dense, LSTM
+import tensorflow.keras.backend as K
 import keras_tuner as kt
 
 # Get the current working directory
