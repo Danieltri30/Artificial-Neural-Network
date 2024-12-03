@@ -5,7 +5,7 @@ Our dataset is Apartment for Rent Classified (2019) from the UCI Machine Learnin
 There is a .ipynb file (jupyter notebook) that we recommend using, since it will have pre-executed results in it and the neural networks take a while to run.
 The last neural network in particular takes quite a while to run, approximately 17-22 seconds per epoch for 50 epochs, which is 14.2-18.3 minutes.
 (it is important to note that this is hardware dependent, since my partner's computer took about 45s per epoch, which means waiting somewhere over half an hour) 
-The rest of the script takes approximately a minute to run, but of course all of this depends on hardware you posses.
+The rest of the script takes approximately one to two minutes to run, but of course all of this depends on hardware you posses.
 
 However, for your convenience we have also included a .py version of the project that will display all of the same results.
     Note that the .py file does not include unused code, primarily tokenization of the 'title' and 'body' columns, that ended up not being helpful in the final model.
