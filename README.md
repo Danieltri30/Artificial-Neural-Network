@@ -1,5 +1,7 @@
 This contains the full contents of the CAP5771 Final Project.
 
+Our dataset is Apartment for Rent Classified (2019) from the UCI Machine Learning Repository. (https://doi.org/10.24432/C5X623) 
+
 There is a .ipynb file (jupyter notebook) that we recommend using, since it will have pre-executed results in it and the neural networks take a while to run.
 The last neural network in particular takes quite a while to run, approximately 17-22 seconds per epoch for 50 epochs, which is 14.2-18.3 minutes.
 (it is important to note that this is hardware dependent, since my partner's computer took about 45s per epoch, which means waiting somewhere over half an hour) 
