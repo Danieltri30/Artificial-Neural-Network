@@ -1,6 +1,6 @@
-This github contains the full contents of the CAP5771 Final Project.
+This repo contains the full contents of the CAP5771 Final Project.
 
-There is a .ipynb file (jupyter notebook) that we recommend using, since it will have pre-executed results in it and the neural networks take a while to run.
+There is a .ipynb file (jupyter notebook) that we recommend using, since it will have pre-executed results in it.
 Some of the neural network tests take quite a while to run, sometimes 17-22 seconds per epoch for 50 epochs, which is 14.2-18.3.
 (it is important to note that this is hardware dependent, since my partner's computer took about 45s per epoch, which means waiting somewhere over half an hour) 
 The rest of the script takes approximately a two to three minutes to run (including the first neural network we trained), but of course all of this depends on hardware you posses.
@@ -22,4 +22,4 @@ To run the Main-Alternative.py file open it in your preferred code editor and ru
     The text based results will be displayed in console, while the graphs will be displayed in pop-up boxes.
     The script will not proceed until the graph pop-up boxes have been closed.
 
-When either of the scripts is finished a single line stating that "Script Finished." will be displayed in console.
+When either of the scripts is finished a single line stating that "Script Finished." will be displayed in console or at the bottom of the page in the case of the .ipynb file.
