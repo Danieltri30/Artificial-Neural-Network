@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np 
 import seaborn as sns
+import random
 import os
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -17,6 +18,12 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import load_model
 import keras_tuner as kt
+import tensorflow as tf
+
+# Setting Seeds now for Neural Networks Later
+random.seed(42)
+np.random.seed(42)
+tf.random.set_seed(42)
 
 # Get the current working directory
 # Slight change that now gets the relative path to the script
@@ -462,38 +469,35 @@ def main():
 if __name__ == "__main__":
     main()
                 
+# This is one of many other models we tried
+# Loss: 0.0013324442552402616, MAE: 0.027234883978962898, R²: 0.6954784989356995
 
-def lr_schedule(epoch, lr):
-    if epoch <= 10:
-        if epoch % 2 == 0 and epoch > 0:
-            return lr * 0.9
-    else:
-        return lr * 0.9
-    return lr
+def build_model(hp):
+    model = Sequential()
+    model.add(LSTM(128, return_sequences=True, input_shape=(365, 1)))
+    model.add(LSTM(64, return_sequences=False))
+    model.add(Dense(25))
+    model.add(Dense(1))
+    model.compile(
+        optimizer='adam',
+        loss='mean_squared_error',
+        metrics=['mae', r2_metric]
+    )
+    return model
 
+# NeuralNetwork Class
 class NeuralNetwork:
-    
     def __init__(self, X_train, X_test, y_train, y_test) -> None:
         self.X_train = X_train
         self.X_test = X_test
         self.y_train = y_train
         self.y_test = y_test
-        self.model = Sequential()
+        self.model = None  # Initialize as None
 
     def build_model(self):
-        self.model = Sequential()
-        self.model.add(LSTM(128, return_sequences=True, input_shape=(365, 1)))
-        self.model.add(LSTM(64, return_sequences=False))
-        self.model.add(Dense(25))
-        self.model.add(Dense(1))
-        self.model.compile(
-            optimizer='adam',
-            loss='mean_squared_error',
-            metrics=['mae', r2_metric]  
-        )
-        self.model.summary()
+        self.model = build_model(None)  # Use the standalone build_model function
 
-    def train(self, epochs=50, batch_size=32):
+    def train(self, epochs=45, batch_size=32):
         self.model.fit(
             self.X_train,
             self.y_train,
@@ -508,40 +512,39 @@ class NeuralNetwork:
         result = self.model.evaluate(self.X_test, self.y_test)
         if len(result) == 3:  
             loss, mae, r2 = result
-            print(f"Loss : {loss}, MAE : {mae}, R² : {r2}")
+            print(f"Loss: {loss}, MAE: {mae}, R²: {r2}")
         else:
             loss = result
             print(f"Loss: {loss}")
 
-
 # Main function
 def main():
-
+    # Perform hyperparameter tuning with Hyperband
     tuner = kt.Hyperband(
-        build_model,
+        build_model,  # Reference the standalone function
         objective='val_mae',
-        max_epochs=50,
+        max_epochs=45,
         directory='tuner_results',
         project_name='apartment_model',
     )
-    
-     
-    lr_scheduler = LearningRateScheduler(lr_schedule, verbose=1)
-    tuner.search(X_train, y_train, validation_data=(X_test, y_test), batch_size=32, callback = [lr_scheduler])
 
+    tuner.search(X_train, y_train, validation_data=(X_test, y_test), batch_size=32)
+
+    # Get the best hyperparameters
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    print(f"Best Hyperparameters: {best_hps.values}")
+
+    # Use the NeuralNetwork class for training and evaluation
     nn = NeuralNetwork(X_train, X_test, y_train, y_test)
     nn.build_model()
     nn.train()
     nn.evaluate()
 
-
 if __name__ == "__main__":
     main()
 
 # Final graph
-np.random.seed(0)
- 
+
 class NeuralNetwork:
     def __init__(self, X_train, X_test, y_train, y_test) -> None:
         self.X_train = X_train
