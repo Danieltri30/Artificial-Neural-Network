@@ -13,7 +13,9 @@ from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.metrics import mean_absolute_error, r2_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM
+from tensorflow.keras.callbacks import LearningRateScheduler
 import tensorflow.keras.backend as K
+from tensorflow.keras.models import load_model
 import keras_tuner as kt
 
 # Get the current working directory
@@ -77,6 +79,10 @@ plt.show()
 
 # They can't be seen very well on the graph above, but there are indeed outliers. Otherwise it would not stretch all the way to 50000
 print(df['price'].describe())
+
+# We will set this for later on...
+original_max_price = df['price'].max()
+original_min_price = df['price'].min()
 
 # Calculate the median price
 median_rent_price = df['price'].median()
@@ -455,15 +461,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+                
 
+def lr_schedule(epoch, lr):
+    if epoch <= 10:
+        if epoch % 2 == 0 and epoch > 0:
+            return lr * 0.9
+    else:
+        return lr * 0.9
+    return lr
 
-
-if __name__ == "__main__":
-    main()
-
-# NeuralNetwork Class
 class NeuralNetwork:
-
+    
     def __init__(self, X_train, X_test, y_train, y_test) -> None:
         self.X_train = X_train
         self.X_test = X_test
@@ -492,6 +501,8 @@ class NeuralNetwork:
             epochs=epochs,
             batch_size=batch_size,
         )
+        self.model.save("trained_rnn_model.h5")
+        print("Model saved as 'trained_rnn_model.h5'")
 
     def evaluate(self):
         result = self.model.evaluate(self.X_test, self.y_test)
@@ -513,8 +524,10 @@ def main():
         directory='tuner_results',
         project_name='apartment_model',
     )
-
-    tuner.search(X_train, y_train, validation_data=(X_test, y_test), batch_size=32)
+    
+     
+    lr_scheduler = LearningRateScheduler(lr_schedule, verbose=1)
+    tuner.search(X_train, y_train, validation_data=(X_test, y_test), batch_size=32, callback = [lr_scheduler])
 
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     nn = NeuralNetwork(X_train, X_test, y_train, y_test)
@@ -525,8 +538,101 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Final graph
+np.random.seed(0)
  
+class NeuralNetwork:
+    def __init__(self, X_train, X_test, y_train, y_test) -> None:
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
+        self.model = Sequential()
+    def predict_future(self, steps=365):
+        """
+        Generate future predictions starting from the last sequence in the test set.
+        """
+        last_sequence = self.X_test.iloc[-1].values.copy()  # Ensure this is a NumPy array
+        predictions = []
+
+        for _ in range(steps):
+            # Prepare the input sequence
+            input_sequence = last_sequence.reshape(1, -1, 1)
+            next_prediction = self.model.predict(input_sequence)
+            predictions.append(next_prediction[0, 0])
+            
+            # Update the sequence
+            last_sequence = np.roll(last_sequence, -1)
+            last_sequence[-1] = next_prediction[0, 0]
+        
+        return predictions
+
+    def plot_predictions(self, predictions):
+        """
+        Plot the predictions and convert y-axis ticks to display prices in dollars.
+        """
+        # Plot the normalized predictions
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(1, len(predictions) + 1), predictions, label="Predicted Prices")
+
+        # Access the current axes
+        ax = plt.gca()
+
+        # Get the original y-ticks from the plot
+        original_y_ticks = ax.get_yticks()
+        print("Original y-ticks (normalized):", original_y_ticks)  # Debugging info
+
+        # Map the normalized y-ticks directly to dollar values
+        y_tick_labels = []
+        for tick in original_y_ticks:
+            # Apply reverse normalization to get the actual dollar value
+            dollar_value = tick * (original_max_price - original_min_price) + original_min_price
+            
+            # If dollar_value is out of reasonable bounds, handle it appropriately
+            if dollar_value > 0 and dollar_value < float('inf'):
+                y_tick_labels.append(f"${dollar_value:,.2f}")
+                print(f"Tick {tick} converted to ${dollar_value:,.2f}")
+            else:
+                y_tick_labels.append("$∞")
+                print(f"Tick {tick} resulted in an invalid value; set to $∞")
+
+        # Update the y-axis with new tick labels
+        ax.set_yticks(original_y_ticks)
+        ax.set_yticklabels(y_tick_labels)
+
+        # Add plot details
+        plt.xlabel("Days")
+        plt.ylabel("Predicted Rental Price ($)")
+        plt.title("Predicted Rental Prices for the Next Year based on all types of housing")
+        plt.legend()
+        plt.grid()
+        plt.show()  
+
+# Main function
+def main():
+
+    print("Loading trained model...")
+
+    # Initialize the NeuralNetwork class with globally defined data
+    nn = NeuralNetwork(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
+
+    # Load the trained model
+    nn.model = load_model("trained_rnn_model.h5", custom_objects={"r2_metric": r2_metric})
+
+    # Predict future values
+    future_predictions = nn.predict_future(steps=365)
+    
+    # Debugging info
+    print("Min Price:", original_min_price)
+    print("Max Price:", original_max_price)
+    print("Predictions (first 5):", future_predictions[:5])
+
+    # Plot the predicted values
+    nn.plot_predictions(future_predictions)
 
 
+if __name__ == "__main__":
+    main()
 
 print("Script Finished.")
